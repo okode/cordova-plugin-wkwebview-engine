@@ -428,6 +428,10 @@ static void * KVOContext = &KVOContext;
     if ([settings cordovaBoolSettingForKey:@"KeyboardDisplayRequiresUserAction" defaultValue:YES] == NO) {
         [self keyboardDisplayDoesNotRequireUserAction];
     }
+ 
+    if ([settings cordovaBoolSettingForKey:@"KeyboardKeyboardAppearanceDark" defaultValue:NO] == YES) {
+        [self setKeyboardAppearanceDark];
+    }
 }
 
 - (void)keyboardDisplayDoesNotRequireUserAction {
@@ -439,6 +443,21 @@ static void * KVOContext = &KVOContext;
         ((void (*)(id, SEL, void*, BOOL, BOOL, id))originalImp)(me, sel, arg0, TRUE, arg2, arg3);
     });
     method_setImplementation(method, imp);
+}
+
+- (void)setKeyboardAppearanceDark {
+    IMP darkImp = imp_implementationWithBlock(^(id _s) {
+        return UIKeyboardAppearanceDark;
+    });
+    for (NSString* classString in @[@"WKContentView", @"UITextInputTraits"]) {
+        Class c = NSClassFromString(classString);
+        Method m = class_getInstanceMethod(c, @selector(keyboardAppearance));
+        if (m != NULL) {
+            method_setImplementation(m, darkImp);
+        } else {
+            class_addMethod(c, @selector(keyboardAppearance), darkImp, "l@:");
+        }
+    }
 }
 
 - (void)updateWithInfo:(NSDictionary*)info
